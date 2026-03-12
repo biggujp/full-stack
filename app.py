@@ -3,17 +3,22 @@ import sqlite3
 import os
 
 app = Flask(__name__)
-app.secret_key = "hrsystem"
+app.secret_key = "hrsecret"
 
 UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+DB_PATH = "database/job.db"
 
-# -------------------
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs("database", exist_ok=True)
+
+PER_PAGE = 5
+
+# ---------------------
 # DATABASE
-# -------------------
+# ---------------------
 
 def get_db():
-    conn = sqlite3.connect("job_hr.sqlite3")
+    conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
     return conn
 
@@ -24,10 +29,13 @@ def init_db():
     conn.execute("""
     CREATE TABLE IF NOT EXISTS applicant(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        email TEXT,
+        firstname TEXT,
+        lastname TEXT,
+        email TEXT UNIQUE,
+        phone TEXT,
         position TEXT,
         experience INTEGER,
+        address TEXT,
         resume TEXT
     )
     """)
@@ -37,33 +45,22 @@ def init_db():
 
 init_db()
 
-# -------------------
+# ---------------------
 # LOGIN
-# -------------------
+# ---------------------
 
-LOGIN = """
+LOGIN_HTML = """
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body{
-background:#121212;
-color:white;
-display:flex;
-justify-content:center;
-align-items:center;
-height:100vh;
-}
-.card{
-background:#1e1e1e;
-padding:40px;
-width:350px;
-}
+body{background:#121212;color:white;display:flex;justify-content:center;align-items:center;height:100vh;}
+.card{background:#1e1e1e;padding:40px;width:350px;}
 </style>
 
 <div class="card">
 
-<h3 class="mb-3">HR Login</h3>
+<h3 class="text-center mb-3">Admin Login</h3>
 
 <form method="POST">
 
@@ -83,49 +80,24 @@ def login():
     if request.method == "POST":
 
         if request.form["user"] == "admin" and request.form["pw"] == "1234":
-
             session["login"] = True
-            return redirect("/")
+            return redirect("/dashboard")
 
-    return render_template_string(LOGIN)
+    return render_template_string(LOGIN_HTML)
 
-# -------------------
-# MAIN PAGE
-# -------------------
+# ---------------------
+# JOB APPLICATION FORM
+# ---------------------
 
-INDEX_HTML = """
-
-<!DOCTYPE html>
-<html>
-<head>
-
-<title>Job Application Form</title>
+FORM_HTML = """
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-
-body{
-background:#121212;
-color:white;
-}
-
-.card{
-background:#1e1e1e;
-border:none;
-}
-
-input,select,textarea{
-background:#2b2b2b !important;
-color:white !important;
-border:none !important;
-}
-
+body{background:#121212;color:white;}
+.card{background:#1e1e1e;border:none;}
+input,select,textarea{background:#2b2b2b !important;color:white !important;border:none !important;}
 </style>
-
-</head>
-
-<body>
 
 <div class="container mt-5">
 
@@ -153,7 +125,7 @@ border:none !important;
 
 <div class="col">
 <label>Email</label>
-<input class="form-control" name="email" type="email" required>
+<input class="form-control" name="email" required>
 </div>
 
 <div class="col">
@@ -166,44 +138,34 @@ border:none !important;
 <div class="row mb-3">
 
 <div class="col">
-<label>Position Applied</label>
+<label>Position</label>
 <select class="form-control" name="position">
-
 <option>Software Developer</option>
 <option>Data Analyst</option>
 <option>UX Designer</option>
 <option>Marketing</option>
-
 </select>
 </div>
 
 <div class="col">
-<label>Years of Experience</label>
+<label>Experience</label>
 <input class="form-control" name="experience">
 </div>
 
 </div>
 
 <div class="mb-3">
-
 <label>Address</label>
 <textarea class="form-control" name="address"></textarea>
-
 </div>
 
 <div class="mb-3">
-
-<label>Upload Resume (PDF)</label>
+<label>Resume PDF</label>
 <input type="file" class="form-control" name="resume">
-
 </div>
 
 <div class="text-center">
-
-<button class="btn btn-success btn-lg">
-Submit Application
-</button>
-
+<button class="btn btn-success btn-lg">Submit Application</button>
 </div>
 
 </form>
@@ -211,129 +173,101 @@ Submit Application
 </div>
 
 </div>
-
-</body>
-
-</html>
-
 """
 
+@app.route("/")
+def index():
+    return render_template_string(FORM_HTML)
 
-HTML = """
+# ---------------------
+# APPLY (ตรวจสมัครซ้ำ)
+# ---------------------
+
+@app.route("/apply", methods=["POST"])
+def apply():
+
+    email = request.form["email"]
+
+    conn = get_db()
+
+    exist = conn.execute(
+        "SELECT id FROM applicant WHERE email=?",
+        (email,)
+    ).fetchone()
+
+    if exist:
+        return "<h2 style='text-align:center;margin-top:100px;'>You already applied. Please wait for HR.</h2>"
+
+    file = request.files["resume"]
+    filename = ""
+
+    if file:
+        filename = file.filename
+        file.save(os.path.join(UPLOAD_FOLDER, filename))
+
+    conn.execute("""
+    INSERT INTO applicant
+    (firstname,lastname,email,phone,position,experience,address,resume)
+    VALUES (?,?,?,?,?,?,?,?)
+    """,
+    (
+        request.form["firstname"],
+        request.form["lastname"],
+        email,
+        request.form["phone"],
+        request.form["position"],
+        request.form["experience"],
+        request.form["address"],
+        filename
+    ))
+
+    conn.commit()
+    conn.close()
+
+    return "<h2 style='text-align:center;margin-top:100px;'>Application Submitted</h2>"
+
+# ---------------------
+# DASHBOARD
+# ---------------------
+
+DASHBOARD_HTML = """
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-
-body{
-background:#121212;
-color:white;
-}
-
-.card{
-background:#1e1e1e;
-border:none;
-}
-
-input{
-background:#2b2b2b !important;
-color:white !important;
-border:none !important;
-}
-
-table{
-color:white;
-}
-
+body{background:#121212;color:white;}
+.card{background:#1e1e1e;border:none;}
+table{color:white;}
 </style>
 
 <div class="container mt-5">
 
 <h2 class="text-center mb-4">HR Dashboard</h2>
 
-<div class="row mb-4 text-center">
-
-<div class="col">
-<div class="card p-3">
+<div class="card p-3 mb-4 text-center">
 <h5>Total Applicants</h5>
 <h2>{{total}}</h2>
 </div>
-</div>
 
-</div>
+<form method="GET" class="mb-3">
 
-<div class="card p-4 mb-4">
-
-<form method="POST" action="/add" enctype="multipart/form-data">
-
-<div class="row">
-
-<div class="col">
-<input class="form-control" name="name" placeholder="Name">
-</div>
-
-<div class="col">
-<input class="form-control" name="email" placeholder="Email">
-</div>
-
-<div class="col">
-<input class="form-control" name="position" placeholder="Position">
-</div>
-
-<div class="col">
-<input class="form-control" name="experience" placeholder="Experience">
-</div>
-
-<div class="col">
-<input type="file" class="form-control" name="resume">
-</div>
-
-<div class="col">
-<button class="btn btn-success">Add</button>
-</div>
-
-</div>
-
-</form>
-
-</div>
-
-<div class="card p-4 mb-4">
-
-<form method="GET">
-
-<div class="row">
-
-<div class="col">
 <input class="form-control" name="search" placeholder="Search name">
-</div>
-
-<div class="col">
-<button class="btn btn-primary">Search</button>
-</div>
-
-</div>
 
 </form>
-
-</div>
 
 <div class="card p-4">
 
 <table class="table table-dark table-striped">
 
 <thead>
-
 <tr>
 <th>ID</th>
 <th>Name</th>
 <th>Email</th>
 <th>Position</th>
-<th>Exp</th>
 <th>Resume</th>
 <th>Action</th>
 </tr>
-
 </thead>
 
 <tbody>
@@ -343,31 +277,24 @@ color:white;
 <tr>
 
 <td>{{a.id}}</td>
-<td>{{a.name}}</td>
+
+<td>{{a.firstname}} {{a.lastname}}</td>
+
 <td>{{a.email}}</td>
+
 <td>{{a.position}}</td>
-<td>{{a.experience}}</td>
 
 <td>
 
 {% if a.resume %}
-<a href="/resume/{{a.resume}}" target="_blank" class="btn btn-info btn-sm">
-View
-</a>
+<a href="/resume/{{a.resume}}" target="_blank" class="btn btn-info btn-sm">View</a>
+<a href="/download/{{a.resume}}" class="btn btn-secondary btn-sm">Download</a>
 {% endif %}
 
 </td>
 
 <td>
-
-<a href="/edit/{{a.id}}" class="btn btn-warning btn-sm">
-Edit
-</a>
-
-<a href="/delete/{{a.id}}" class="btn btn-danger btn-sm">
-Delete
-</a>
-
+<a href="/delete/{{a.id}}" class="btn btn-danger btn-sm">Delete</a>
 </td>
 
 </tr>
@@ -378,116 +305,64 @@ Delete
 
 </table>
 
+<nav>
+
+<ul class="pagination">
+
+{% for p in pages %}
+
+<li class="page-item">
+
+<a class="page-link" href="/dashboard?page={{p}}">{{p}}</a>
+
+</li>
+
+{% endfor %}
+
+</ul>
+
+</nav>
+
 </div>
 
 </div>
 """
 
-# -------------------
-# HOME
-# -------------------
-
-@app.route("/")
-def index():
-    return render_template_string(INDEX_HTML)
-
-
-@app.route("/apply", methods=["POST"])
-def apply():
-
-    firstname = request.form["firstname"]
-    lastname = request.form["lastname"]
-    email = request.form["email"]
-    phone = request.form["phone"]
-    position = request.form["position"]
-    experience = request.form["experience"]
-    address = request.form["address"]
-
-    file = request.files["resume"]
-
-    filename = ""
-
-    if file:
-        filename = file.filename
-        file.save(os.path.join("uploads", filename))
-
-    conn = get_db()
-
-    conn.execute("""
-    INSERT INTO applicant
-    (name,email,position,experience,resume)
-    VALUES (?,?,?,?,?)
-    """,
-    (firstname+" "+lastname,email,position,experience,filename))
-
-    conn.commit()
-    conn.close()
-
-    return "<h2 style='text-align:center;margin-top:100px;'>Application Submitted Successfully</h2>"
-
-
-@app.route("/admin")
-def admin():
+@app.route("/dashboard")
+def dashboard():
 
     if not session.get("login"):
         return redirect("/login")
 
-    search = request.args.get("search")
+    page = int(request.args.get("page",1))
+    search = request.args.get("search","")
 
     conn = get_db()
 
-    if search:
-        applicants = conn.execute(
-            "SELECT * FROM applicant WHERE name LIKE ?",
-            ('%'+search+'%',)
-        ).fetchall()
-    else:
-        applicants = conn.execute(
-            "SELECT * FROM applicant"
-        ).fetchall()
+    query = "SELECT * FROM applicant WHERE firstname LIKE ? OR lastname LIKE ?"
+    data = conn.execute(query,('%'+search+'%','%'+search+'%')).fetchall()
 
-    total = conn.execute("SELECT COUNT(*) FROM applicant").fetchone()[0]
+    total = len(data)
+
+    start = (page-1)*PER_PAGE
+    end = start + PER_PAGE
+
+    applicants = data[start:end]
+
+    pages = range(1,(total//PER_PAGE)+2)
 
     conn.close()
 
-    return render_template_string(HTML, applicants=applicants, total=total)
-
-# -------------------
-# ADD
-# -------------------
-
-@app.route("/add", methods=["POST"])
-def add():
-
-    file = request.files["resume"]
-
-    filename = ""
-
-    if file:
-        filename = file.filename
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
-
-    conn = get_db()
-
-    conn.execute(
-        "INSERT INTO applicant(name,email,position,experience,resume) VALUES (?,?,?,?,?)",
-        (
-            request.form["name"],
-            request.form["email"],
-            request.form["position"],
-            request.form["experience"],
-            filename
-        )
+    return render_template_string(
+        DASHBOARD_HTML,
+        applicants=applicants,
+        total=total,
+        pages=pages
     )
 
-    conn.commit()
-    conn.close()
-
-    return redirect("/")
-
-# -------------------
+# ---------------------
 # DELETE
-# -------------------
+# ---------------------
 
 @app.route("/delete/<id>")
 def delete(id):
@@ -495,70 +370,28 @@ def delete(id):
     conn = get_db()
 
     conn.execute("DELETE FROM applicant WHERE id=?",(id,))
-
     conn.commit()
     conn.close()
 
-    return redirect("/")
+    return redirect("/dashboard")
 
-# -------------------
-# EDIT
-# -------------------
-
-@app.route("/edit/<id>", methods=["GET","POST"])
-def edit(id):
-
-    conn = get_db()
-
-    if request.method == "POST":
-
-        conn.execute("""
-        UPDATE applicant
-        SET name=?,email=?,position=?,experience=?
-        WHERE id=?
-        """,
-        (
-            request.form["name"],
-            request.form["email"],
-            request.form["position"],
-            request.form["experience"],
-            id
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return redirect("/")
-
-    applicant = conn.execute(
-        "SELECT * FROM applicant WHERE id=?",(id,)
-    ).fetchone()
-
-    conn.close()
-
-    return f"""
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <div class='container mt-5'>
-    <h3>Edit Applicant</h3>
-    <form method='POST'>
-    <input class='form-control mb-2' name='name' value='{applicant["name"]}'>
-    <input class='form-control mb-2' name='email' value='{applicant["email"]}'>
-    <input class='form-control mb-2' name='position' value='{applicant["position"]}'>
-    <input class='form-control mb-2' name='experience' value='{applicant["experience"]}'>
-    <button class='btn btn-warning'>Update</button>
-    </form>
-    </div>
-    """
-
-# -------------------
+# ---------------------
 # VIEW RESUME
-# -------------------
+# ---------------------
 
 @app.route("/resume/<filename>")
 def resume(filename):
-    return send_from_directory("uploads", filename)
+    return send_from_directory(UPLOAD_FOLDER, filename)
 
-# -------------------
+# ---------------------
+# DOWNLOAD RESUME
+# ---------------------
+
+@app.route("/download/<filename>")
+def download(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+
+# ---------------------
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0",port=5000)
