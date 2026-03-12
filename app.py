@@ -1,6 +1,8 @@
 from flask import Flask, request, redirect, render_template_string, session, send_from_directory
 import sqlite3
 import os
+import uuid
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 app.secret_key = "hrsecret"
@@ -11,7 +13,14 @@ DB_PATH = "database/job.db"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs("database", exist_ok=True)
 
+app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
+
 PER_PAGE = 5
+
+ALLOWED_EXTENSIONS = {"pdf"}
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".",1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ---------------------
 # DATABASE
@@ -50,7 +59,6 @@ init_db()
 # ---------------------
 
 LOGIN_HTML = """
-
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
@@ -153,7 +161,7 @@ Admin Login
 
 <div class="col">
 <label>Nickname</label>
-<input class="form-control" name="nickname">
+<input class="form-control" name="nickname" required>
 </div>
 
 </div>
@@ -167,7 +175,7 @@ Admin Login
 
 <div class="col">
 <label>Phone</label>
-<input class="form-control" name="phone">
+<input class="form-control" name="phone" required>
 </div>
 
 </div>
@@ -176,7 +184,8 @@ Admin Login
 
 <div class="col">
 <label>Position</label>
-<select class="form-control" name="position">
+<select class="form-control" name="position" required>
+<option value="">Select Position</option>
 <option>Software Developer</option>
 <option>Data Analyst</option>
 <option>UX Designer</option>
@@ -186,19 +195,19 @@ Admin Login
 
 <div class="col">
 <label>Experience</label>
-<input class="form-control" name="experience" placeholder="Years of experience">
+<input class="form-control" name="experience" required placeholder="Years of experience">
 </div>
 
 </div>
 
 <div class="mb-3">
 <label>Address</label>
-<textarea class="form-control" name="address"></textarea>
+<textarea class="form-control" name="address" required></textarea>
 </div>
 
 <div class="mb-3">
-<label>Resume PDF</label>
-<input type="file" class="form-control" name="resume">
+<label>Resume (PDF only)</label>
+<input type="file" class="form-control" name="resume" accept=".pdf" required>
 </div>
 
 <div class="text-center">
@@ -227,7 +236,24 @@ def index():
 @app.route("/apply", methods=["POST"])
 def apply():
 
-    email = request.form["email"]
+    fullname = request.form.get("fullname")
+    nickname = request.form.get("nickname")
+    email = request.form.get("email")
+    phone = request.form.get("phone")
+    position = request.form.get("position")
+    experience = request.form.get("experience")
+    address = request.form.get("address")
+
+    file = request.files.get("resume")
+
+    if not fullname or not nickname or not email or not phone or not position or not experience or not address:
+        return "<h2 style='text-align:center;margin-top:100px;color:red;'>กรุณากรอกข้อมูลให้ครบก่อนส่งใบสมัคร</h2>"
+
+    if not file or file.filename == "":
+        return "<h2 style='text-align:center;margin-top:100px;color:red;'>กรุณาแนบ Resume</h2>"
+
+    if not allowed_file(file.filename):
+        return "<h2 style='text-align:center;margin-top:100px;color:red;'>อนุญาตเฉพาะไฟล์ PDF เท่านั้น</h2>"
 
     conn = get_db()
 
@@ -237,14 +263,15 @@ def apply():
     ).fetchone()
 
     if exist:
+        conn.close()
         return "<h2 style='text-align:center;margin-top:100px;'>You already applied. Please wait for HR.</h2>"
 
-    file = request.files["resume"]
-    filename = ""
+    filename = secure_filename(file.filename)
+    filename = str(uuid.uuid4()) + ".pdf"
 
-    if file:
-        filename = file.filename
-        file.save(os.path.join(UPLOAD_FOLDER, filename))
+    filepath = os.path.join(UPLOAD_FOLDER, filename)
+
+    file.save(filepath)
 
     conn.execute("""
     INSERT INTO applicant
@@ -252,20 +279,20 @@ def apply():
     VALUES (?,?,?,?,?,?,?,?)
     """,
     (
-        request.form["fullname"],
-        request.form["nickname"],
+        fullname,
+        nickname,
         email,
-        request.form["phone"],
-        request.form["position"],
-        request.form["experience"],
-        request.form["address"],
+        phone,
+        position,
+        experience,
+        address,
         filename
     ))
 
     conn.commit()
     conn.close()
 
-    return "<h2 style='text-align:center;margin-top:100px;'>Application Submitted</h2>"
+    return "<h2 style='text-align:center;margin-top:100px;color:green;'>Application Submitted</h2>"
 
 # ---------------------
 # DASHBOARD
@@ -285,6 +312,10 @@ box-shadow:0 4px 15px rgba(0,0,0,0.1);
 </style>
 
 <div class="container mt-5">
+
+<a href="/" class="btn btn-outline-primary">
+Back to Home
+</a>
 
 <h2 class="text-center mb-4">HR Dashboard</h2>
 
