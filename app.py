@@ -29,12 +29,12 @@ def init_db():
     conn.execute("""
     CREATE TABLE IF NOT EXISTS applicant(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        firstname TEXT,
-        lastname TEXT,
+        fullname TEXT,
+        nickname TEXT,
         email TEXT UNIQUE,
         phone TEXT,
         position TEXT,
-        experience INTEGER,
+        experience TEXT,
         address TEXT,
         resume TEXT
     )
@@ -46,7 +46,7 @@ def init_db():
 init_db()
 
 # ---------------------
-# LOGIN
+# LOGIN PAGE
 # ---------------------
 
 LOGIN_HTML = """
@@ -54,20 +54,34 @@ LOGIN_HTML = """
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body{background:#121212;color:white;display:flex;justify-content:center;align-items:center;height:100vh;}
-.card{background:#1e1e1e;padding:40px;width:350px;}
+body{
+background:#f4f6f9;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+
+.card{
+background:white;
+padding:40px;
+width:350px;
+border-radius:12px;
+box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
 </style>
 
 <div class="card">
 
-<h3 class="text-center mb-3">Admin Login</h3>
+<h3 class="text-center mb-4">Admin Login</h3>
 
 <form method="POST">
 
 <input class="form-control mb-3" name="user" placeholder="Username">
+
 <input class="form-control mb-3" name="pw" type="password" placeholder="Password">
 
-<button class="btn btn-success w-100">Login</button>
+<button class="btn btn-primary w-100">Login</button>
 
 </form>
 
@@ -94,14 +108,37 @@ FORM_HTML = """
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body{background:#121212;color:white;}
-.card{background:#1e1e1e;border:none;}
-input,select,textarea{background:#2b2b2b !important;color:white !important;border:none !important;}
+
+body{
+background:#f4f6f9;
+}
+
+.card{
+background:white;
+border-radius:12px;
+box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
+
+.header{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:20px;
+}
+
 </style>
 
 <div class="container mt-5">
 
-<h2 class="text-center mb-4">Job Application Form</h2>
+<div class="header">
+
+<h2>Job Application Form</h2>
+
+<a href="/login" class="btn btn-outline-primary">
+Admin Login
+</a>
+
+</div>
 
 <div class="card p-4">
 
@@ -110,13 +147,13 @@ input,select,textarea{background:#2b2b2b !important;color:white !important;borde
 <div class="row mb-3">
 
 <div class="col">
-<label>First Name</label>
-<input class="form-control" name="firstname" required>
+<label>Full Name</label>
+<input class="form-control" name="fullname" required>
 </div>
 
 <div class="col">
-<label>Last Name</label>
-<input class="form-control" name="lastname" required>
+<label>Nickname</label>
+<input class="form-control" name="nickname">
 </div>
 
 </div>
@@ -149,7 +186,7 @@ input,select,textarea{background:#2b2b2b !important;color:white !important;borde
 
 <div class="col">
 <label>Experience</label>
-<input class="form-control" name="experience">
+<input class="form-control" name="experience" placeholder="Years of experience">
 </div>
 
 </div>
@@ -165,7 +202,11 @@ input,select,textarea{background:#2b2b2b !important;color:white !important;borde
 </div>
 
 <div class="text-center">
-<button class="btn btn-success btn-lg">Submit Application</button>
+
+<button class="btn btn-success btn-lg px-5">
+Submit Application
+</button>
+
 </div>
 
 </form>
@@ -180,7 +221,7 @@ def index():
     return render_template_string(FORM_HTML)
 
 # ---------------------
-# APPLY (ตรวจสมัครซ้ำ)
+# APPLY
 # ---------------------
 
 @app.route("/apply", methods=["POST"])
@@ -207,12 +248,12 @@ def apply():
 
     conn.execute("""
     INSERT INTO applicant
-    (firstname,lastname,email,phone,position,experience,address,resume)
+    (fullname,nickname,email,phone,position,experience,address,resume)
     VALUES (?,?,?,?,?,?,?,?)
     """,
     (
-        request.form["firstname"],
-        request.form["lastname"],
+        request.form["fullname"],
+        request.form["nickname"],
         email,
         request.form["phone"],
         request.form["position"],
@@ -235,9 +276,12 @@ DASHBOARD_HTML = """
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body{background:#121212;color:white;}
-.card{background:#1e1e1e;border:none;}
-table{color:white;}
+body{background:#f4f6f9;}
+.card{
+background:white;
+border-radius:12px;
+box-shadow:0 4px 15px rgba(0,0,0,0.1);
+}
 </style>
 
 <div class="container mt-5">
@@ -250,21 +294,22 @@ table{color:white;}
 </div>
 
 <form method="GET" class="mb-3">
-
 <input class="form-control" name="search" placeholder="Search name">
-
 </form>
 
 <div class="card p-4">
 
-<table class="table table-dark table-striped">
+<table class="table table-striped">
 
 <thead>
 <tr>
 <th>ID</th>
 <th>Name</th>
+<th>Phone</th>
 <th>Email</th>
 <th>Position</th>
+<th>Experience</th>
+<th>Address</th>
 <th>Resume</th>
 <th>Action</th>
 </tr>
@@ -278,11 +323,17 @@ table{color:white;}
 
 <td>{{a.id}}</td>
 
-<td>{{a.firstname}} {{a.lastname}}</td>
+<td>{{a.fullname}} ({{a.nickname}})</td>
+
+<td>{{a.phone}}</td>
 
 <td>{{a.email}}</td>
 
 <td>{{a.position}}</td>
+
+<td>{{a.experience}}</td>
+
+<td>{{a.address}}</td>
 
 <td>
 
@@ -312,9 +363,7 @@ table{color:white;}
 {% for p in pages %}
 
 <li class="page-item">
-
 <a class="page-link" href="/dashboard?page={{p}}">{{p}}</a>
-
 </li>
 
 {% endfor %}
@@ -339,7 +388,7 @@ def dashboard():
 
     conn = get_db()
 
-    query = "SELECT * FROM applicant WHERE firstname LIKE ? OR lastname LIKE ?"
+    query = "SELECT * FROM applicant WHERE fullname LIKE ? OR nickname LIKE ?"
     data = conn.execute(query,('%'+search+'%','%'+search+'%')).fetchall()
 
     total = len(data)
