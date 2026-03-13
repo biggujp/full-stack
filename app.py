@@ -13,14 +13,8 @@ DB_PATH = "database/job.db"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs("database", exist_ok=True)
 
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024
-
 PER_PAGE = 5
-
 ALLOWED_EXTENSIONS = {"pdf"}
-
-def allowed_file(filename):
-    return "." in filename and filename.rsplit(".",1)[1].lower() in ALLOWED_EXTENSIONS
 
 # ---------------------
 # DATABASE
@@ -40,6 +34,7 @@ def init_db():
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         fullname TEXT,
         nickname TEXT,
+        age INTEGER,
         email TEXT UNIQUE,
         phone TEXT,
         position TEXT,
@@ -55,10 +50,21 @@ def init_db():
 init_db()
 
 # ---------------------
+# FILE VALIDATION
+# ---------------------
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".",1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+# ---------------------
 # LOGIN PAGE
 # ---------------------
 
 LOGIN_HTML = """
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
@@ -73,7 +79,8 @@ height:100vh;
 .card{
 background:white;
 padding:40px;
-width:350px;
+width:100%;
+max-width:350px;
 border-radius:12px;
 box-shadow:0 4px 15px rgba(0,0,0,0.1);
 }
@@ -96,6 +103,7 @@ box-shadow:0 4px 15px rgba(0,0,0,0.1);
 </div>
 """
 
+
 @app.route("/login", methods=["GET","POST"])
 def login():
 
@@ -107,11 +115,14 @@ def login():
 
     return render_template_string(LOGIN_HTML)
 
+
 # ---------------------
-# JOB APPLICATION FORM
+# JOB FORM
 # ---------------------
 
 FORM_HTML = """
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -129,6 +140,8 @@ box-shadow:0 4px 15px rgba(0,0,0,0.1);
 
 .header{
 display:flex;
+flex-wrap:wrap;
+gap:10px;
 justify-content:space-between;
 align-items:center;
 margin-bottom:20px;
@@ -154,12 +167,12 @@ Admin Login
 
 <div class="row mb-3">
 
-<div class="col">
+<div class="col-md-6">
 <label>Full Name</label>
 <input class="form-control" name="fullname" required>
 </div>
 
-<div class="col">
+<div class="col-md-6">
 <label>Nickname</label>
 <input class="form-control" name="nickname" required>
 </div>
@@ -168,12 +181,17 @@ Admin Login
 
 <div class="row mb-3">
 
-<div class="col">
+<div class="col-md-4">
+<label>Age</label>
+<input type="number" class="form-control" name="age" required>
+</div>
+
+<div class="col-md-4">
 <label>Email</label>
 <input class="form-control" name="email" required>
 </div>
 
-<div class="col">
+<div class="col-md-4">
 <label>Phone</label>
 <input class="form-control" name="phone" required>
 </div>
@@ -182,7 +200,7 @@ Admin Login
 
 <div class="row mb-3">
 
-<div class="col">
+<div class="col-md-6">
 <label>Position</label>
 <select class="form-control" name="position" required>
 <option value="">Select Position</option>
@@ -193,7 +211,7 @@ Admin Login
 </select>
 </div>
 
-<div class="col">
+<div class="col-md-6">
 <label>Experience</label>
 <input class="form-control" name="experience" required placeholder="Years of experience">
 </div>
@@ -210,13 +228,9 @@ Admin Login
 <input type="file" class="form-control" name="resume" accept=".pdf" required>
 </div>
 
-<div class="text-center">
-
-<button class="btn btn-success btn-lg px-5">
+<button class="btn btn-success btn-lg w-100">
 Submit Application
 </button>
-
-</div>
 
 </form>
 
@@ -225,9 +239,11 @@ Submit Application
 </div>
 """
 
+
 @app.route("/")
 def index():
     return render_template_string(FORM_HTML)
+
 
 # ---------------------
 # APPLY
@@ -238,6 +254,7 @@ def apply():
 
     fullname = request.form.get("fullname")
     nickname = request.form.get("nickname")
+    age = request.form.get("age")
     email = request.form.get("email")
     phone = request.form.get("phone")
     position = request.form.get("position")
@@ -245,15 +262,6 @@ def apply():
     address = request.form.get("address")
 
     file = request.files.get("resume")
-
-    if not fullname or not nickname or not email or not phone or not position or not experience or not address:
-        return "<h2 style='text-align:center;margin-top:100px;color:red;'>กรุณากรอกข้อมูลให้ครบก่อนส่งใบสมัคร</h2>"
-
-    if not file or file.filename == "":
-        return "<h2 style='text-align:center;margin-top:100px;color:red;'>กรุณาแนบ Resume</h2>"
-
-    if not allowed_file(file.filename):
-        return "<h2 style='text-align:center;margin-top:100px;color:red;'>อนุญาตเฉพาะไฟล์ PDF เท่านั้น</h2>"
 
     conn = get_db()
 
@@ -264,23 +272,21 @@ def apply():
 
     if exist:
         conn.close()
-        return "<h2 style='text-align:center;margin-top:100px;'>You already applied. Please wait for HR.</h2>"
+        return "<h2 style='text-align:center;margin-top:100px;'>You already applied.</h2>"
 
-    filename = secure_filename(file.filename)
     filename = str(uuid.uuid4()) + ".pdf"
-
     filepath = os.path.join(UPLOAD_FOLDER, filename)
-
     file.save(filepath)
 
     conn.execute("""
     INSERT INTO applicant
-    (fullname,nickname,email,phone,position,experience,address,resume)
-    VALUES (?,?,?,?,?,?,?,?)
+    (fullname,nickname,age,email,phone,position,experience,address,resume)
+    VALUES (?,?,?,?,?,?,?,?,?)
     """,
     (
         fullname,
         nickname,
+        age,
         email,
         phone,
         position,
@@ -294,56 +300,95 @@ def apply():
 
     return "<h2 style='text-align:center;margin-top:100px;color:green;'>Application Submitted</h2>"
 
+
 # ---------------------
 # DASHBOARD
 # ---------------------
 
 DASHBOARD_HTML = """
 
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
-body{background:#f4f6f9;}
-.card{
+
+body{
+background:#f4f6f9;
+}
+
+.card-box{
 background:white;
 border-radius:12px;
 box-shadow:0 4px 15px rgba(0,0,0,0.1);
 }
+
+.mobile-card{
+border-radius:12px;
+background:white;
+box-shadow:0 3px 10px rgba(0,0,0,0.08);
+padding:15px;
+margin-bottom:15px;
+}
+
+.mobile-label{
+font-size:12px;
+color:gray;
+}
+
+.mobile-value{
+font-weight:500;
+}
+
 </style>
 
-<div class="container mt-5">
+<div class="container mt-4">
 
-<a href="/" class="btn btn-outline-primary">
-Back to Home
+<a href="/" class="btn btn-outline-primary mb-3">
+Back
 </a>
 
-<h2 class="text-center mb-4">HR Dashboard</h2>
+<h3 class="text-center mb-3">HR Dashboard</h3>
 
-<div class="card p-3 mb-4 text-center">
-<h5>Total Applicants</h5>
+<div class="card-box p-3 mb-4 text-center">
+
+<h6>Total Applicants</h6>
 <h2>{{total}}</h2>
+
 </div>
 
-<form method="GET" class="mb-3">
+<form method="GET" class="row g-2 mb-3">
+
+<div class="col-md-6">
 <input class="form-control" name="search" placeholder="Search name">
+</div>
+
+<div class="col-md-2">
+<button class="btn btn-primary w-100">Search</button>
+</div>
+
 </form>
 
-<div class="card p-4">
+<div class="card-box p-4 d-none d-md-block">
+
+<div class="table-responsive">
 
 <table class="table table-striped">
 
 <thead>
+
 <tr>
 <th>ID</th>
 <th>Name</th>
+<th>Age</th>
 <th>Phone</th>
 <th>Email</th>
 <th>Position</th>
 <th>Experience</th>
-<th>Address</th>
 <th>Resume</th>
 <th>Action</th>
 </tr>
+
 </thead>
 
 <tbody>
@@ -356,6 +401,8 @@ Back to Home
 
 <td>{{a.fullname}} ({{a.nickname}})</td>
 
+<td>{{a.age}}</td>
+
 <td>{{a.phone}}</td>
 
 <td>{{a.email}}</td>
@@ -364,19 +411,18 @@ Back to Home
 
 <td>{{a.experience}}</td>
 
-<td>{{a.address}}</td>
-
 <td>
 
-{% if a.resume %}
 <a href="/resume/{{a.resume}}" target="_blank" class="btn btn-info btn-sm">View</a>
+
 <a href="/download/{{a.resume}}" class="btn btn-secondary btn-sm">Download</a>
-{% endif %}
 
 </td>
 
 <td>
+
 <a href="/delete/{{a.id}}" class="btn btn-danger btn-sm">Delete</a>
+
 </td>
 
 </tr>
@@ -387,9 +433,65 @@ Back to Home
 
 </table>
 
-<nav>
+</div>
 
-<ul class="pagination">
+</div>
+
+<div class="d-md-none">
+
+{% for a in applicants %}
+
+<div class="mobile-card">
+
+<div class="mobile-value mb-2">
+{{a.fullname}} ({{a.nickname}})
+</div>
+
+<div class="row">
+
+<div class="col-6">
+<div class="mobile-label">Age</div>
+<div class="mobile-value">{{a.age}}</div>
+</div>
+
+<div class="col-6">
+<div class="mobile-label">Experience</div>
+<div class="mobile-value">{{a.experience}}</div>
+</div>
+
+<div class="col-6 mt-2">
+<div class="mobile-label">Phone</div>
+<div class="mobile-value">{{a.phone}}</div>
+</div>
+
+<div class="col-6 mt-2">
+<div class="mobile-label">Position</div>
+<div class="mobile-value">{{a.position}}</div>
+</div>
+
+</div>
+
+<div class="mt-3 d-flex gap-2">
+
+<a href="/resume/{{a.resume}}" class="btn btn-info btn-sm w-50">
+Resume
+</a>
+
+<a href="/delete/{{a.id}}" class="btn btn-danger btn-sm w-50">
+Delete
+</a>
+
+</div>
+
+</div>
+
+{% endfor %}
+
+</div>
+
+<nav class="mt-3">
+
+<ul class="pagination justify-content-center">
 
 {% for p in pages %}
 
@@ -404,9 +506,8 @@ Back to Home
 </nav>
 
 </div>
-
-</div>
 """
+
 
 @app.route("/dashboard")
 def dashboard():
@@ -440,6 +541,7 @@ def dashboard():
         pages=pages
     )
 
+
 # ---------------------
 # DELETE
 # ---------------------
@@ -455,21 +557,24 @@ def delete(id):
 
     return redirect("/dashboard")
 
+
 # ---------------------
-# VIEW RESUME
+# RESUME VIEW
 # ---------------------
 
 @app.route("/resume/<filename>")
 def resume(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
+
 # ---------------------
-# DOWNLOAD RESUME
+# DOWNLOAD
 # ---------------------
 
 @app.route("/download/<filename>")
 def download(filename):
     return send_from_directory(UPLOAD_FOLDER, filename, as_attachment=True)
+
 
 # ---------------------
 
