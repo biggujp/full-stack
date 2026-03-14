@@ -362,6 +362,7 @@ def apply():
 
 @app.route("/login", methods=["GET","POST"])
 def login():
+    
 
     if request.method == "POST":
 
@@ -369,7 +370,7 @@ def login():
             session["login"] = True
             return redirect("/dashboard")
 
-    html = """
+    html = NAVBAR + """   
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -410,7 +411,7 @@ def dashboard():
 
     conn.close()
 
-    html = """
+    html = NAVBAR + """   
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
