@@ -13,7 +13,7 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs("database", exist_ok=True)
 
 PER_PAGE = 5
-ALLOWED_EXTENSIONS = {"pdf"}
+
 
 # ---------------------
 # DATABASE
@@ -26,6 +26,7 @@ def get_db():
 
 
 def init_db():
+
     conn = get_db()
 
     conn.execute("""
@@ -39,7 +40,8 @@ def init_db():
         position TEXT,
         experience TEXT,
         address TEXT,
-        resume TEXT
+        resume TEXT,
+        status TEXT DEFAULT 'New'
     )
     """)
 
@@ -50,7 +52,7 @@ init_db()
 
 
 # ---------------------
-# NAVBAR TEMPLATE
+# NAVBAR
 # ---------------------
 
 NAVBAR = """
@@ -74,15 +76,7 @@ NAVBAR = """
 </li>
 
 <li class="nav-item">
-<a class="nav-link" href="/about">ABOUT US</a>
-</li>
-
-<li class="nav-item">
 <a class="nav-link" href="/jobs">JOB APPLICATION</a>
-</li>
-
-<li class="nav-item">
-<a class="nav-link" href="/contact">CONTACT US</a>
 </li>
 
 <li class="nav-item">
@@ -101,8 +95,6 @@ NAVBAR = """
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
 """
 
 
@@ -115,105 +107,27 @@ def home():
 
     html = NAVBAR + """
 
-<div class="container mt-5">
+<div class="container mt-5 text-center">
 
-<div class="text-center">
-
-<h1>Welcome to Our Company</h1>
+<h1>Welcome to Tiger J Co., Ltd.</h1>
 
 <p class="lead">
-Innovative technology solutions for the modern world
+Join our team and build amazing technology with us
 </p>
 
-<a href="/jobs" class="btn btn-primary btn-lg mt-3">
+<a href="/jobs" class="btn btn-primary btn-lg">
 Apply for Job
 </a>
 
 </div>
 
-</div>
-
 """
 
     return render_template_string(html)
 
 
 # ---------------------
-# ABOUT US
-# ---------------------
-
-@app.route("/about")
-def about():
-
-    html = NAVBAR + """
-
-<div class="container mt-5">
-
-<h2>About Our Company</h2>
-
-<p>
-We are a technology company focused on building innovative software
-solutions for businesses worldwide.
-</p>
-
-<p>
-Our mission is to create powerful digital platforms that help companies
-grow and succeed in the digital age.
-</p>
-
-</div>
-
-"""
-
-    return render_template_string(html)
-
-
-# ---------------------
-# CONTACT
-# ---------------------
-
-@app.route("/contact")
-def contact():
-
-    html = NAVBAR + """
-
-<div class="container mt-5">
-
-<h2 class="mb-4">Contact Us</h2>
-
-<div class="row">
-
-<div class="col-md-6">
-
-<p><b>Email:</b> hr@company.com</p>
-<p><b>Phone:</b> +66 000 000 000</p>
-<p><b>Address:</b> Bangkok, Thailand</p>
-
-</div>
-
-<div class="col-md-6">
-
-<iframe
-width="100%"
-height="300"
-style="border:0"
-loading="lazy"
-allowfullscreen
-src="https://www.google.com/maps?q=Yada Building, Bangkok, Thailand&output=embed">
-
-</div>
-
-</div>
-
-</div>
-
-"""
-
-    return render_template_string(html)
-
-
-# ---------------------
-# JOB APPLICATION PAGE
+# JOB APPLICATION
 # ---------------------
 
 @app.route("/jobs")
@@ -243,6 +157,7 @@ def jobs():
 
 </div>
 
+
 <div class="row mb-3">
 
 <div class="col-md-4">
@@ -262,13 +177,14 @@ def jobs():
 
 </div>
 
+
 <div class="row mb-3">
 
 <div class="col-md-6">
 
 <label>Position</label>
 
-<select class="form-control" name="position" required>
+<select class="form-control" name="position">
 <option>Software Developer</option>
 <option>Data Analyst</option>
 <option>UX Designer</option>
@@ -278,22 +194,21 @@ def jobs():
 </div>
 
 <div class="col-md-6">
-
 <label>Experience</label>
-
-<input class="form-control" name="experience" required>
-
+<input class="form-control" name="experience">
 </div>
 
 </div>
+
 
 <div class="mb-3">
 
 <label>Address</label>
 
-<textarea class="form-control" name="address" required></textarea>
+<textarea class="form-control" name="address"></textarea>
 
 </div>
+
 
 <div class="mb-3">
 
@@ -303,10 +218,9 @@ def jobs():
 
 </div>
 
+
 <button class="btn btn-success w-100 btn-lg">
-
 Submit Application
-
 </button>
 
 </form>
@@ -327,28 +241,36 @@ Submit Application
 @app.route("/apply", methods=["POST"])
 def apply():
 
-    fullname = request.form["fullname"]
-    nickname = request.form["nickname"]
-    age = request.form["age"]
-    email = request.form["email"]
-    phone = request.form["phone"]
-    position = request.form["position"]
-    experience = request.form["experience"]
-    address = request.form["address"]
-
     file = request.files["resume"]
 
     filename = str(uuid.uuid4()) + ".pdf"
+
     file.save(os.path.join(UPLOAD_FOLDER, filename))
 
     conn = get_db()
 
     conn.execute("""
+
     INSERT INTO applicant
     (fullname,nickname,age,email,phone,position,experience,address,resume)
+
     VALUES (?,?,?,?,?,?,?,?,?)
+
     """,
-    (fullname,nickname,age,email,phone,position,experience,address,filename))
+
+    (
+    request.form["fullname"],
+    request.form["nickname"],
+    request.form["age"],
+    request.form["email"],
+    request.form["phone"],
+    request.form["position"],
+    request.form["experience"],
+    request.form["address"],
+    filename
+    )
+
+    )
 
     conn.commit()
     conn.close()
@@ -362,17 +284,15 @@ def apply():
 
 @app.route("/login", methods=["GET","POST"])
 def login():
-    
 
     if request.method == "POST":
 
         if request.form["user"] == "admin" and request.form["pw"] == "1234":
+
             session["login"] = True
             return redirect("/dashboard")
 
-    html = NAVBAR + """   
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    html = NAVBAR + """
 
 <div class="container mt-5" style="max-width:400px">
 
@@ -384,7 +304,9 @@ def login():
 
 <input class="form-control mb-3" name="pw" type="password" placeholder="Password">
 
-<button class="btn btn-primary w-100">Login</button>
+<button class="btn btn-primary w-100">
+Login
+</button>
 
 </form>
 
@@ -405,28 +327,130 @@ def dashboard():
     if not session.get("login"):
         return redirect("/login")
 
+    page = request.args.get("page",1,type=int)
+    search = request.args.get("search","")
+
+    offset = (page-1)*PER_PAGE
+
     conn = get_db()
 
-    data = conn.execute("SELECT * FROM applicant").fetchall()
+    if search:
+
+        data = conn.execute("""
+
+        SELECT * FROM applicant
+        WHERE fullname LIKE ?
+        OR email LIKE ?
+        OR position LIKE ?
+        LIMIT ? OFFSET ?
+
+        """,
+
+        (f"%{search}%",f"%{search}%",f"%{search}%",PER_PAGE,offset)
+
+        ).fetchall()
+
+        total = conn.execute("""
+
+        SELECT COUNT(*) FROM applicant
+        WHERE fullname LIKE ?
+        OR email LIKE ?
+        OR position LIKE ?
+
+        """,
+
+        (f"%{search}%",f"%{search}%",f"%{search}%")
+
+        ).fetchone()[0]
+
+    else:
+
+        data = conn.execute(
+
+        "SELECT * FROM applicant LIMIT ? OFFSET ?",
+
+        (PER_PAGE,offset)
+
+        ).fetchall()
+
+        total = conn.execute(
+        "SELECT COUNT(*) FROM applicant"
+        ).fetchone()[0]
+
+
+    stats = conn.execute("""
+
+    SELECT position,COUNT(*) as total
+    FROM applicant
+    GROUP BY position
+
+    """).fetchall()
 
     conn.close()
 
-    html = NAVBAR + """   
+    pages = total//PER_PAGE + (1 if total%PER_PAGE else 0)
 
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    html = NAVBAR + f"""
 
 <div class="container mt-5">
 
-<h2>HR Dashboard</h2>
+<h2 class="mb-4">HR Dashboard</h2>
 
-<table class="table table-striped">
+<form class="mb-3">
+<input class="form-control" name="search" placeholder="Search Applicant" value="{search}">
+</form>
+
+
+<div class="row mb-4">
+
+<div class="col-md-3">
+
+<div class="card text-center p-3">
+
+<h5>Total Applicants</h5>
+
+<h3>{total}</h3>
+
+</div>
+
+</div>
+
+"""
+
+    for s in stats:
+
+        html += f"""
+
+<div class="col-md-3">
+
+<div class="card text-center p-3">
+
+<h6>{s['position']}</h6>
+
+<h4>{s['total']}</h4>
+
+</div>
+
+</div>
+
+"""
+
+    html += """
+
+</div>
+
+
+<div class="table-responsive">
+
+<table class="table table-bordered table-hover">
 
 <tr>
 <th>ID</th>
 <th>Name</th>
-<th>Age</th>
 <th>Email</th>
+<th>Phone</th>
 <th>Position</th>
+<th>Status</th>
 <th>Resume</th>
 <th>Action</th>
 </tr>
@@ -438,18 +462,72 @@ def dashboard():
         html += f"""
 
 <tr>
+
 <td>{a['id']}</td>
-<td>{a['fullname']}</td>
-<td>{a['age']}</td>
+
+<td>
+<b>{a['fullname']}</b><br>
+<small>{a['nickname']}</small>
+</td>
+
 <td>{a['email']}</td>
+<td>{a['phone']}</td>
 <td>{a['position']}</td>
-<td><a href="/resume/{a['resume']}">View</a></td>
-<td><a href="/delete/{a['id']}" class="btn btn-danger btn-sm">Delete</a></td>
+
+<td>
+<span class="badge bg-info">
+{a['status']}
+</span>
+</td>
+
+<td>
+
+<a class="btn btn-sm btn-primary"
+href="/resume/{a['resume']}"
+target="_blank">
+View
+</a>
+
+<a class="btn btn-sm btn-success"
+href="/download/{a['resume']}">
+Download
+</a>
+
+</td>
+
+<td>
+
+<a class="btn btn-sm btn-danger"
+href="/delete/{a['id']}">
+Delete
+</a>
+
+</td>
+
 </tr>
 
 """
 
-    html += "</table></div>"
+    html += "</table></div><ul class='pagination'>"
+
+    for p in range(1,pages+1):
+
+        html += f"""
+
+<li class="page-item">
+
+<a class="page-link"
+href="/dashboard?page={p}&search={search}">
+
+{p}
+
+</a>
+
+</li>
+
+"""
+
+    html += "</ul></div>"
 
     return html
 
@@ -463,7 +541,11 @@ def delete(id):
 
     conn = get_db()
 
-    conn.execute("DELETE FROM applicant WHERE id=?",(id,))
+    conn.execute(
+    "DELETE FROM applicant WHERE id=?",
+    (id,)
+    )
+
     conn.commit()
     conn.close()
 
@@ -476,10 +558,28 @@ def delete(id):
 
 @app.route("/resume/<filename>")
 def resume(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
+
+    return send_from_directory(
+    UPLOAD_FOLDER,
+    filename
+    )
+
+
+# ---------------------
+# DOWNLOAD RESUME
+# ---------------------
+
+@app.route("/download/<filename>")
+def download(filename):
+
+    return send_from_directory(
+    UPLOAD_FOLDER,
+    filename,
+    as_attachment=True
+    )
 
 
 # ---------------------
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0",port=5000,debug=True)
