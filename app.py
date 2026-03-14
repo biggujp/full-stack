@@ -45,6 +45,24 @@ def init_db():
     )
     """)
 
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS job_post(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.execute("""
+    CREATE TABLE IF NOT EXISTS news(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        content TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     conn.commit()
     conn.close()
 
@@ -75,19 +93,17 @@ NAVBAR = """
 <a class="nav-link" href="/">HOME</a>
 </li>
 
-<li class="nav-item"> 
+<li class="nav-item">
 <a class="nav-link" href="/about">ABOUT US</a>
- </li>
-
+</li>
 
 <li class="nav-item">
 <a class="nav-link" href="/jobs">JOB APPLICATION</a>
 </li>
 
 <li class="nav-item">
- <a class="nav-link" href="/contact">CONTACT US</a> 
- </li>
-
+<a class="nav-link" href="/contact">CONTACT US</a>
+</li>
 
 <li class="nav-item">
 <a class="nav-link" href="/login">ADMIN</a>
@@ -103,8 +119,6 @@ NAVBAR = """
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-
 """
 
 
@@ -114,6 +128,18 @@ NAVBAR = """
 
 @app.route("/")
 def home():
+
+    conn = get_db()
+
+    news = conn.execute(
+        "SELECT * FROM news ORDER BY id DESC LIMIT 5"
+    ).fetchall()
+
+    jobs = conn.execute(
+        "SELECT * FROM job_post ORDER BY id DESC LIMIT 5"
+    ).fetchall()
+
+    conn.close()
 
     html = NAVBAR + """
 
@@ -125,56 +151,93 @@ def home():
 Join our team and build amazing technology with us
 </p>
 
-<a href="/jobs" class="btn btn-primary btn-lg">
-Apply for Job
-</a>
+</div>
+
+<div class="container mt-5">
+
+<h3 class="mb-4">Company News</h3>
+
+"""
+
+    for n in news:
+
+        html += f"""
+        <div class="card p-3 mb-3 shadow-sm">
+        <h5>{n['title']}</h5>
+        <p>{n['content']}</p>
+        </div>
+        """
+
+    html += """
+
+<h3 class="mt-5 mb-4">Job Announcements</h3>
+
+"""
+
+    for j in jobs:
+
+        html += f"""
+        <div class="card p-3 mb-3 shadow-sm">
+        <h5>{j['title']}</h5>
+        <p>{j['description']}</p>
+        </div>
+        """
+
+    html += "</div>"
+
+    return html
+
+
+# ---------------------
+# ABOUT
+# ---------------------
+
+@app.route("/about")
+def about():
+
+    html = NAVBAR + """
+
+<div class="container mt-5">
+
+<h2>About Our Company</h2>
+
+<p>
+We are a technology company focused on building innovative software solutions.
+</p>
 
 </div>
 
 """
 
-    return render_template_string(html)
-
-
-
-# --------------------- 
-#  ABOUT US 
-# --------------------- 
-
-@app.route("/about") 
-def about(): 
-    html = NAVBAR + """ 
-<div class="container mt-5"> 
-<h2>About Our Company</h2> 
-<p> We are a technology company focused on building innovative software solutions for businesses worldwide. </p> 
-<p> Our mission is to create powerful digital platforms that help companies grow and succeed in the digital age. </p> 
-</div> 
-""" 
-    return render_template_string(html) 
-
-
-# --------------------- 
-#  CONTACT 
-#  ---------------------
-# 
-@app.route("/contact") 
-def contact(): 
-    html = NAVBAR + """ 
-<div class="container mt-5"> 
-<h2 class="mb-4">Contact Us</h2> 
-<div class="row"> <div class="col-md-6"> 
-<p><b>Email:</b> hr.tigerj@gmail.com</p> 
-<p><b>Phone:</b> 02-266-4902</p> 
-<p><b>Address:</b></p> <p>10F ROOM NO.1001,1006 YADA BLDG.,</p> <p>56 Silom Road, Suriyawong,</p> <p>Bangrak, Bangkok 10500</p> </div> 
-<div class="col-md-6"> 
-<iframe width="100%" height="300" style="border:0" loading="lazy" allowfullscreen src="https://www.google.com/maps?q=Yada Building, Bangkok, Thailand&output=embed"> 
-</div> </div> </div> 
-""" 
-    return render_template_string(html)
+    return html
 
 
 # ---------------------
-# JOB APPLICATION
+# CONTACT
+# ---------------------
+
+@app.route("/contact")
+def contact():
+
+    html = NAVBAR + """
+
+<div class="container mt-5">
+
+<h2>Contact Us</h2>
+
+<p>Email: hr.tigerj@gmail.com</p>
+
+<p>Phone: 02-266-4902</p>
+
+</div>
+
+"""
+
+    return html
+
+
+# ---------------------
+# JOB APPLICATION FORM
 # ---------------------
 
 @app.route("/jobs")
@@ -190,83 +253,26 @@ def jobs():
 
 <form method="POST" action="/apply" enctype="multipart/form-data">
 
-<div class="row mb-3">
+<input class="form-control mb-2" name="fullname" placeholder="Full Name" required>
+<input class="form-control mb-2" name="nickname" placeholder="Nickname">
+<input class="form-control mb-2" name="age" type="number" placeholder="Age">
+<input class="form-control mb-2" name="email" placeholder="Email">
+<input class="form-control mb-2" name="phone" placeholder="Phone">
 
-<div class="col-md-6">
-<label>Full Name</label>
-<input class="form-control" name="fullname" required>
-</div>
-
-<div class="col-md-6">
-<label>Nickname</label>
-<input class="form-control" name="nickname" required>
-</div>
-
-</div>
-
-
-<div class="row mb-3">
-
-<div class="col-md-4">
-<label>Age</label>
-<input type="number" class="form-control" name="age" required>
-</div>
-
-<div class="col-md-4">
-<label>Email</label>
-<input class="form-control" name="email" required>
-</div>
-
-<div class="col-md-4">
-<label>Phone</label>
-<input class="form-control" name="phone" required>
-</div>
-
-</div>
-
-
-<div class="row mb-3">
-
-<div class="col-md-6">
-
-<label>Position</label>
-
-<select class="form-control" name="position">
+<select class="form-control mb-2" name="position">
 <option>Software Developer</option>
 <option>Data Analyst</option>
 <option>UX Designer</option>
 <option>Marketing</option>
 </select>
 
-</div>
+<input class="form-control mb-2" name="experience" placeholder="Experience">
 
-<div class="col-md-6">
-<label>Experience</label>
-<input class="form-control" name="experience">
-</div>
+<textarea class="form-control mb-2" name="address" placeholder="Address"></textarea>
 
-</div>
+<input type="file" class="form-control mb-3" name="resume">
 
-
-<div class="mb-3">
-
-<label>Address</label>
-
-<textarea class="form-control" name="address"></textarea>
-
-</div>
-
-
-<div class="mb-3">
-
-<label>Resume (PDF)</label>
-
-<input type="file" class="form-control" name="resume" required>
-
-</div>
-
-
-<button class="btn btn-success w-100 btn-lg">
+<button class="btn btn-success w-100">
 Submit Application
 </button>
 
@@ -278,7 +284,7 @@ Submit Application
 
 """
 
-    return render_template_string(html)
+    return html
 
 
 # ---------------------
@@ -297,27 +303,22 @@ def apply():
     conn = get_db()
 
     conn.execute("""
-
     INSERT INTO applicant
     (fullname,nickname,age,email,phone,position,experience,address,resume)
-
     VALUES (?,?,?,?,?,?,?,?,?)
-
     """,
 
     (
-    request.form["fullname"],
-    request.form["nickname"],
-    request.form["age"],
-    request.form["email"],
-    request.form["phone"],
-    request.form["position"],
-    request.form["experience"],
-    request.form["address"],
-    filename
-    )
-
-    )
+        request.form["fullname"],
+        request.form["nickname"],
+        request.form["age"],
+        request.form["email"],
+        request.form["phone"],
+        request.form["position"],
+        request.form["experience"],
+        request.form["address"],
+        filename
+    ))
 
     conn.commit()
     conn.close()
@@ -337,13 +338,14 @@ def login():
         if request.form["user"] == "admin" and request.form["pw"] == "1234":
 
             session["login"] = True
+
             return redirect("/dashboard")
 
     html = NAVBAR + """
 
 <div class="container mt-5" style="max-width:400px">
 
-<h3 class="text-center">Admin Login</h3>
+<h3>Admin Login</h3>
 
 <form method="POST">
 
@@ -361,7 +363,7 @@ Login
 
 """
 
-    return render_template_string(html)
+    return html
 
 
 # ---------------------
@@ -374,118 +376,27 @@ def dashboard():
     if not session.get("login"):
         return redirect("/login")
 
-    page = request.args.get("page",1,type=int)
-    search = request.args.get("search","")
-
-    offset = (page-1)*PER_PAGE
-
     conn = get_db()
 
-    if search:
-
-        data = conn.execute("""
-
-        SELECT * FROM applicant
-        WHERE fullname LIKE ?
-        OR email LIKE ?
-        OR position LIKE ?
-        LIMIT ? OFFSET ?
-
-        """,
-
-        (f"%{search}%",f"%{search}%",f"%{search}%",PER_PAGE,offset)
-
-        ).fetchall()
-
-        total = conn.execute("""
-
-        SELECT COUNT(*) FROM applicant
-        WHERE fullname LIKE ?
-        OR email LIKE ?
-        OR position LIKE ?
-
-        """,
-
-        (f"%{search}%",f"%{search}%",f"%{search}%")
-
-        ).fetchone()[0]
-
-    else:
-
-        data = conn.execute(
-
-        "SELECT * FROM applicant LIMIT ? OFFSET ?",
-
-        (PER_PAGE,offset)
-
-        ).fetchall()
-
-        total = conn.execute(
-        "SELECT COUNT(*) FROM applicant"
-        ).fetchone()[0]
-
-
-    stats = conn.execute("""
-
-    SELECT position,COUNT(*) as total
-    FROM applicant
-    GROUP BY position
-
-    """).fetchall()
+    applicants = conn.execute(
+        "SELECT * FROM applicant ORDER BY id DESC"
+    ).fetchall()
 
     conn.close()
 
-    pages = total//PER_PAGE + (1 if total%PER_PAGE else 0)
-
-    html = NAVBAR + f"""
+    html = NAVBAR + """
 
 <div class="container mt-5">
 
 <h2 class="mb-4">HR Dashboard</h2>
 
-<form class="mb-3">
-<input class="form-control" name="search" placeholder="Search Applicant" value="{search}">
-</form>
+<a class="btn btn-success mb-3" href="/manage_jobs">
+Manage Job Posts
+</a>
 
-
-<div class="row mb-4">
-
-<div class="col-md-3">
-
-<div class="card text-center p-3">
-
-<h5>Total Applicants</h5>
-
-<h3>{total}</h3>
-
-</div>
-
-</div>
-
-"""
-
-    for s in stats:
-
-        html += f"""
-
-<div class="col-md-3">
-
-<div class="card text-center p-3">
-
-<h6>{s['position']}</h6>
-
-<h4>{s['total']}</h4>
-
-</div>
-
-</div>
-
-"""
-
-    html += """
-
-</div>
-
+<a class="btn btn-warning mb-3" href="/manage_news">
+Manage News
+</a>
 
 <div class="table-responsive">
 
@@ -494,9 +405,13 @@ def dashboard():
 <tr>
 <th>ID</th>
 <th>Name</th>
+<th>Nickname</th>
+<th>Age</th>
 <th>Email</th>
 <th>Phone</th>
 <th>Position</th>
+<th>Experience</th>
+<th>Address</th>
 <th>Status</th>
 <th>Resume</th>
 <th>Action</th>
@@ -504,7 +419,7 @@ def dashboard():
 
 """
 
-    for a in data:
+    for a in applicants:
 
         html += f"""
 
@@ -512,14 +427,21 @@ def dashboard():
 
 <td>{a['id']}</td>
 
-<td>
-<b>{a['fullname']}</b><br>
-<small>{a['nickname']}</small>
-</td>
+<td>{a['fullname']}</td>
+
+<td>{a['nickname']}</td>
+
+<td>{a['age']}</td>
 
 <td>{a['email']}</td>
+
 <td>{a['phone']}</td>
+
 <td>{a['position']}</td>
+
+<td>{a['experience']}</td>
+
+<td>{a['address']}</td>
 
 <td>
 <span class="badge bg-info">
@@ -555,32 +477,21 @@ Delete
 
 """
 
-    html += "</table></div><ul class='pagination'>"
+    html += """
 
-    for p in range(1,pages+1):
+</table>
 
-        html += f"""
+</div>
 
-<li class="page-item">
-
-<a class="page-link"
-href="/dashboard?page={p}&search={search}">
-
-{p}
-
-</a>
-
-</li>
+</div>
 
 """
-
-    html += "</ul></div>"
 
     return html
 
 
 # ---------------------
-# DELETE
+# DELETE APPLICANT
 # ---------------------
 
 @app.route("/delete/<id>")
@@ -589,14 +500,226 @@ def delete(id):
     conn = get_db()
 
     conn.execute(
-    "DELETE FROM applicant WHERE id=?",
-    (id,)
+        "DELETE FROM applicant WHERE id=?",
+        (id,)
     )
 
     conn.commit()
     conn.close()
 
     return redirect("/dashboard")
+
+
+# ---------------------
+# MANAGE JOB POSTS
+# ---------------------
+
+@app.route("/manage_jobs", methods=["GET","POST"])
+def manage_jobs():
+
+    if not session.get("login"):
+        return redirect("/login")
+
+    conn = get_db()
+
+    if request.method == "POST":
+
+        conn.execute(
+            "INSERT INTO job_post (title,description) VALUES (?,?)",
+            (
+                request.form["title"],
+                request.form["description"]
+            )
+        )
+
+        conn.commit()
+
+    jobs = conn.execute(
+        "SELECT * FROM job_post ORDER BY id DESC"
+    ).fetchall()
+
+    conn.close()
+
+    html = NAVBAR + """
+
+<div class="container mt-5">
+
+<h3>Manage Job Announcements</h3>
+
+<form method="POST" class="mb-4">
+
+<input class="form-control mb-2" name="title" placeholder="Job Title">
+
+<textarea class="form-control mb-2" name="description" placeholder="Description"></textarea>
+
+<button class="btn btn-success">
+Add Job
+</button>
+
+</form>
+
+<table class="table">
+
+<tr>
+<th>ID</th>
+<th>Title</th>
+<th>Action</th>
+</tr>
+
+"""
+
+    for j in jobs:
+
+        html += f"""
+
+<tr>
+
+<td>{j['id']}</td>
+
+<td>{j['title']}</td>
+
+<td>
+
+<a class="btn btn-danger btn-sm"
+href="/delete_job/{j['id']}">
+Delete
+</a>
+
+</td>
+
+</tr>
+
+"""
+
+    html += "</table></div>"
+
+    return html
+
+
+# ---------------------
+# DELETE JOB
+# ---------------------
+
+@app.route("/delete_job/<id>")
+def delete_job(id):
+
+    conn = get_db()
+
+    conn.execute(
+        "DELETE FROM job_post WHERE id=?",
+        (id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/manage_jobs")
+
+
+# ---------------------
+# MANAGE NEWS
+# ---------------------
+
+@app.route("/manage_news", methods=["GET","POST"])
+def manage_news():
+
+    if not session.get("login"):
+        return redirect("/login")
+
+    conn = get_db()
+
+    if request.method == "POST":
+
+        conn.execute(
+            "INSERT INTO news (title,content) VALUES (?,?)",
+            (
+                request.form["title"],
+                request.form["content"]
+            )
+        )
+
+        conn.commit()
+
+    news = conn.execute(
+        "SELECT * FROM news ORDER BY id DESC"
+    ).fetchall()
+
+    conn.close()
+
+    html = NAVBAR + """
+
+<div class="container mt-5">
+
+<h3>Manage Company News</h3>
+
+<form method="POST" class="mb-4">
+
+<input class="form-control mb-2" name="title" placeholder="News Title">
+
+<textarea class="form-control mb-2" name="content" placeholder="Content"></textarea>
+
+<button class="btn btn-warning">
+Add News
+</button>
+
+</form>
+
+<table class="table">
+
+<tr>
+<th>ID</th>
+<th>Title</th>
+<th>Action</th>
+</tr>
+
+"""
+
+    for n in news:
+
+        html += f"""
+
+<tr>
+
+<td>{n['id']}</td>
+
+<td>{n['title']}</td>
+
+<td>
+
+<a class="btn btn-danger btn-sm"
+href="/delete_news/{n['id']}">
+Delete
+</a>
+
+</td>
+
+</tr>
+
+"""
+
+    html += "</table></div>"
+
+    return html
+
+
+# ---------------------
+# DELETE NEWS
+# ---------------------
+
+@app.route("/delete_news/<id>")
+def delete_news(id):
+
+    conn = get_db()
+
+    conn.execute(
+        "DELETE FROM news WHERE id=?",
+        (id,)
+    )
+
+    conn.commit()
+    conn.close()
+
+    return redirect("/manage_news")
 
 
 # ---------------------
@@ -607,24 +730,18 @@ def delete(id):
 def resume(filename):
 
     return send_from_directory(
-    UPLOAD_FOLDER,
-    filename
+        UPLOAD_FOLDER,
+        filename
     )
-
-
-# ---------------------
-# DOWNLOAD RESUME
-# ---------------------
 
 @app.route("/download/<filename>")
 def download(filename):
 
     return send_from_directory(
-    UPLOAD_FOLDER,
-    filename,
-    as_attachment=True
+        UPLOAD_FOLDER,
+        filename,
+        as_attachment=True
     )
-
 
 # ---------------------
 
