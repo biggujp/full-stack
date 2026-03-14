@@ -75,6 +75,39 @@ init_db()
 
 NAVBAR = """
 
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+
+.post-content{
+    font-size:17px;
+    line-height:1.8;
+}
+
+.post-content h1,
+.post-content h2,
+.post-content h3{
+    margin-top:20px;
+    margin-bottom:10px;
+    font-weight:bold;
+}
+
+.post-content p{
+    margin-bottom:15px;
+}
+
+.post-content img{
+    max-width:100%;
+    border-radius:8px;
+    margin-top:10px;
+}
+
+.post-content ul{
+    padding-left:20px;
+}
+
+</style>
+
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
 
 <div class="container">
@@ -116,6 +149,8 @@ NAVBAR = """
 </div>
 
 </nav>
+
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
@@ -162,9 +197,14 @@ Join our team and build amazing technology with us
     for n in news:
 
         html += f"""
-        <div class="card p-3 mb-3 shadow-sm">
-        <h5>{n['title']}</h5>
-        <p>{n['content']}</p>
+        <div class="card p-3 mb-2 shadow-sm">
+
+        <a href="/news/{n['id']}" style="text-decoration:none;">
+            <h5 class="text-primary">
+                {n['title']}
+            </h5>
+        </a>
+
         </div>
         """
 
@@ -177,9 +217,14 @@ Join our team and build amazing technology with us
     for j in jobs:
 
         html += f"""
-        <div class="card p-3 mb-3 shadow-sm">
-        <h5>{j['title']}</h5>
-        <p>{j['description']}</p>
+        <div class="card p-3 mb-2 shadow-sm">
+
+        <a href="/job/{j['id']}" style="text-decoration:none;">
+            <h5 class="text-success">
+                {j['title']}
+            </h5>
+        </a>
+
         </div>
         """
 
@@ -223,16 +268,47 @@ def contact():
 
 <div class="container mt-5">
 
-<h2>Contact Us</h2>
+<h2 class="mb-4">Contact Us</h2>
 
-<p>Email: hr.tigerj@gmail.com</p>
+<div class="row">
 
-<p>Phone: 02-266-4902</p>
+<div class="col-md-6">
+
+<h5>Company Information</h5>
+
+<p><b>Email:</b> hr.tigerj@gmail.com</p>
+
+<p><b>Phone:</b> 02-266-4902</p>
+
+<p><b>Address:</b></p>
+<p>10 floor, Room 1001,1006</p>
+<p>Yada Building, Bangkok, Thailand</p>
+<p>56 Silom Road, Suriyawong,</p>
+<p>Bangrak, Bangkok, Thailand 10500</p>
+
+</div>
+
+
+<div class="col-md-6">
+
+<h5>Our Location</h5>
+
+<iframe
+src="https://www.google.com/maps?q=Yada Building, Bangkok&output=embed"
+width="100%"
+height="350"
+style="border:0;"
+allowfullscreen=""
+loading="lazy">
+</iframe>
+
+</div>
+
+</div>
 
 </div>
 
 """
-
     return html
 
 
@@ -550,13 +626,20 @@ def manage_jobs():
 
 <input class="form-control mb-2" name="title" placeholder="Job Title">
 
-<textarea class="form-control mb-2" name="description" placeholder="Description"></textarea>
+<textarea class="form-control mb-2" name="description" id="editor"></textarea>
 
 <button class="btn btn-success">
 Add Job
 </button>
 
 </form>
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
+<script>
+CKEDITOR.replace("editor",{
+    height:300
+});
+</script>
 
 <table class="table">
 
@@ -656,13 +739,20 @@ def manage_news():
 
 <input class="form-control mb-2" name="title" placeholder="News Title">
 
-<textarea class="form-control mb-2" name="content" placeholder="Content"></textarea>
+<textarea class="form-control mb-2" name="content" id="editor"></textarea>
 
 <button class="btn btn-warning">
 Add News
 </button>
 
 </form>
+<script src="https://cdn.ckeditor.com/4.22.1/standard/ckeditor.js"></script>
+
+<script>
+CKEDITOR.replace("editor",{
+    height:300
+});
+</script>
 
 <table class="table">
 
@@ -742,6 +832,97 @@ def download(filename):
         filename,
         as_attachment=True
     )
+
+
+# ---------------------
+# NEWS DETAIL
+# ---------------------
+@app.route("/news/<id>")
+def news_detail(id):
+
+    conn = get_db()
+
+    news = conn.execute(
+        "SELECT * FROM news WHERE id=?",
+        (id,)
+    ).fetchone()
+
+    conn.close()
+
+    if not news:
+        return "News not found"
+
+    html = NAVBAR + f"""
+
+<div class="container mt-5">
+
+<div class="card shadow p-4">
+
+<h2 class="mb-3">
+{news['title']}
+</h2>
+
+<hr>
+
+<div class="post-content">
+{news['content']}
+</div>
+
+<a href="/" class="btn btn-secondary mt-4">
+Back
+</a>
+
+</div>
+
+</div>
+
+"""
+    return html
+
+# ---------------------
+# JOB DETAIL
+# ---------------------
+@app.route("/job/<id>")
+def job_detail(id):
+
+    conn = get_db()
+
+    job = conn.execute(
+        "SELECT * FROM job_post WHERE id=?",
+        (id,)
+    ).fetchone()
+
+    conn.close()
+
+    if not job:
+        return "Job not found"
+
+    html = NAVBAR + f"""
+
+<div class="container mt-5">
+
+<div class="card shadow p-4">
+
+<h2>{job['title']}</h2>
+
+<hr>
+
+<div class="post-content">
+{job['description']}
+</div>
+
+<a href="/jobs" class="btn btn-success mt-4">
+Apply Now
+</a>
+
+</div>
+
+</div>
+
+"""
+
+    return html
+
 
 # ---------------------
 
