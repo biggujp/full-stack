@@ -75,9 +75,19 @@ NAVBAR = """
 <a class="nav-link" href="/">HOME</a>
 </li>
 
+<li class="nav-item"> 
+<a class="nav-link" href="/about">ABOUT US</a>
+ </li>
+
+
 <li class="nav-item">
 <a class="nav-link" href="/jobs">JOB APPLICATION</a>
 </li>
+
+<li class="nav-item">
+ <a class="nav-link" href="/contact">CONTACT US</a> 
+ </li>
+
 
 <li class="nav-item">
 <a class="nav-link" href="/login">ADMIN</a>
@@ -123,6 +133,43 @@ Apply for Job
 
 """
 
+    return render_template_string(html)
+
+
+
+# --------------------- 
+#  ABOUT US 
+# --------------------- 
+
+@app.route("/about") 
+def about(): 
+    html = NAVBAR + """ 
+<div class="container mt-5"> 
+<h2>About Our Company</h2> 
+<p> We are a technology company focused on building innovative software solutions for businesses worldwide. </p> 
+<p> Our mission is to create powerful digital platforms that help companies grow and succeed in the digital age. </p> 
+</div> 
+""" 
+    return render_template_string(html) 
+
+
+# --------------------- 
+#  CONTACT 
+#  ---------------------
+# 
+@app.route("/contact") 
+def contact(): 
+    html = NAVBAR + """ 
+<div class="container mt-5"> 
+<h2 class="mb-4">Contact Us</h2> 
+<div class="row"> <div class="col-md-6"> 
+<p><b>Email:</b> hr.tigerj@gmail.com</p> 
+<p><b>Phone:</b> 02-266-4902</p> 
+<p><b>Address:</b></p> <p>10F ROOM NO.1001,1006 YADA BLDG.,</p> <p>56 Silom Road, Suriyawong,</p> <p>Bangrak, Bangkok 10500</p> </div> 
+<div class="col-md-6"> 
+<iframe width="100%" height="300" style="border:0" loading="lazy" allowfullscreen src="https://www.google.com/maps?q=Yada Building, Bangkok, Thailand&output=embed"> 
+</div> </div> </div> 
+""" 
     return render_template_string(html)
 
 
