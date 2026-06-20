@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account - BaanSaiJai</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Segoe UI', Tahoma, sans-serif;
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    overflow-x:hidden;
+    padding:40px 20px;
+    background:
+        radial-gradient(circle at center,
+        #4a2c8a 0%,
+        #0b1025 75%);
+    color:white;
+}
+
+/* ===== Stars ===== */
+.stars{
+    position:fixed;
+    width:100%;
+    height:100%;
+    top:0;
+    left:0;
+    overflow:hidden;
+}
+
+.star{
+    position:absolute;
+    width:4px;
+    height:4px;
+    background:#fff;
+    box-shadow:0 0 10px #fff;
+    animation:blink 2s infinite alternate;
+}
+
+@keyframes blink{
+    from{opacity:0.2}
+    to{opacity:1}
+}
+
+/* ===== Moon ===== */
+.moon{
+    position:absolute;
+    top:60px;
+    right:80px;
+    width:90px;
+    height:90px;
+    background:#ffd166;
+    border-radius:50%;
+    box-shadow:0 0 35px #ffd166;
+}
+
+.moon::before{
+    content:"";
+    position:absolute;
+    width:75px;
+    height:75px;
+    background:#0b1025;
+    border-radius:50%;
+    left:20px;
+    top:0;
+}
+
+/* ===== Main Card ===== */
+.register-container{
+    width:min(500px,95%);
+    background:#10172e;
+    border:6px solid #4d68ff;
+    box-shadow:
+        0 0 0 6px #1b2552,
+        0 20px 60px rgba(0,0,0,.5);
+    padding:45px;
+    z-index:10;
+    animation:float 3s ease-in-out infinite;
+}
+
+@keyframes float{
+    0%,100%{
+        transform:translateY(0);
+    }
+    50%{
+        transform:translateY(-8px);
+    }
+}
+
+/* ===== Title ===== */
+h2{
+    font-family:'Press Start 2P', cursive;
+    font-size:22px;
+    line-height:1.8;
+    text-align:center;
+    margin-bottom:20px;
+    background:
+        linear-gradient(#ffd166,#ff9f1c);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    text-shadow:4px 4px #000;
+}
+
+.subtitle{
+    text-align:center;
+    color:#9be7ff;
+    margin-bottom:35px;
+    line-height:1.8;
+    font-size:15px;
+}
+
+/* ===== Form ===== */
+.form-group{
+    margin-bottom:20px;
+}
+
+label{
+    display:block;
+    margin-bottom:10px;
+    color:#ffd166;
+    font-weight:bold;
+}
+
+/* ===== Django Input ===== */
+input{
+    width:100%;
+    padding:14px;
+    background:#0b1125;
+    color:#fff;
+    border:3px solid #5fa8ff;
+    box-shadow:4px 4px #000;
+    font-size:16px;
+}
+
+input:focus{
+    outline:none;
+    border-color:#80ed99;
+}
+
+/* ===== Help Text ===== */
+.help-text{
+    color:#cfe9ff;
+    margin-top:8px;
+    font-size:14px;
+    line-height:1.6;
+}
+
+/* ===== Error ===== */
+.errorlist{
+    margin-top:10px;
+    padding:12px;
+    background:#3b0d17;
+    border:2px solid #ff4f81;
+    color:#ff9db7;
+    list-style:none;
+    line-height:1.6;
+}
+
+/* ===== Alert ===== */
+.alert{
+    background:#0b1125;
+    border:3px solid #80ed99;
+    color:#80ed99;
+    padding:15px;
+    margin-bottom:25px;
+    box-shadow:4px 4px #000;
+}
+
+/* ===== Button ===== */
+button{
+    width:100%;
+    padding:16px;
+    margin-top:20px;
+    background:#5fa8ff;
+    color:#fff;
+    border:3px solid #fff;
+    box-shadow:4px 4px #000;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.25s;
+}
+
+button:hover{
+    transform:translateY(-5px);
+    background:#80ed99;
+    color:#000;
+}
+
+/* ===== Footer ===== */
+.footer-text{
+    text-align:center;
+    margin-top:30px;
+    color:#d7f3ff;
+    line-height:1.8;
+}
+
+.footer-text a{
+    color:#ffd166;
+    text-decoration:none;
+    font-weight:bold;
+}
+
+.footer-text a:hover{
+    text-decoration:underline;
+}
+
+/* ===== Ground ===== */
+.ground{
+    position:fixed;
+    bottom:0;
+    left:0;
+    width:100%;
+    height:80px;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            #2d6a4f 0 20px,
+            #40916c 20px 40px
+        );
+    border-top:6px solid #95d5b2;
+}
+
+/* ===== Mobile ===== */
+@media(max-width:768px){
+
+    .register-container{
+        padding:30px 20px;
+    }
+
+    h2{
+        font-size:16px;
+    }
+
+    .subtitle{
+        font-size:13px;
+    }
+
+    input,
+    button{
+        font-size:14px;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- Stars -->
+
+<div class="stars">
+    <div class="star" style="top:10%;left:15%"></div>
+    <div class="star" style="top:20%;left:75%"></div>
+    <div class="star" style="top:30%;left:40%"></div>
+    <div class="star" style="top:50%;left:90%"></div>
+    <div class="star" style="top:70%;left:20%"></div>
+    <div class="star" style="top:80%;left:60%"></div>
+    <div class="star" style="top:15%;left:90%"></div>
+    <div class="star" style="top:60%;left:10%"></div>
+</div>
+
+<!-- Moon -->
+
+<div class="moon"></div>
+
+<!-- Register Card -->
+
+<div class="register-container">
+
+<h2>CREATE ACCOUNT</h2>
+
+<p class="subtitle">
+    Join BaanSaiJai Today
+</p>
+
+{% if messages %}
+    {% for message in messages %}
+        <div class="alert">
+            ✓ {{ message }}
+        </div>
+    {% endfor %}
+{% endif %}
+
+<form method="POST">
+    {% csrf_token %}
+
+    {% for field in form %}
+    <div class="form-group">
+
+        <label for="{{ field.id_for_label }}">
+            {{ field.label }}
+        </label>
+
+        {{ field }}
+
+        {% if field.help_text %}
+            <div class="help-text">
+                {{ field.help_text|safe }}
+            </div>
+        {% endif %}
+
+        {% if field.errors %}
+            <div class="errorlist">
+                {{ field.errors }}
+            </div>
+        {% endif %}
+
+    </div>
+    {% endfor %}
+
+    <button type="submit">
+        🚀 REGISTER
+    </button>
+
+</form>
+
+<div class="footer-text">
+    มีบัญชีอยู่แล้ว ?
+    <a href="{% url 'login' %}">
+        เข้าสู่ระบบ
+    </a>
+</div>
+
+</div>
+
+<!-- Ground -->
+
+<div class="ground"></div>
+
+</body>
+</html>

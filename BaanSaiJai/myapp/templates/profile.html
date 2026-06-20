@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>โปรไฟล์ของฉัน - Profile</title>
+   <!-- Google Fonts -->
+   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;600&display=swap" rel="stylesheet">
+   <style>
+       :root {
+           --primary: #6366f1;
+           --primary-hover: #4f46e5;
+           --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           --glass-bg: rgba(255, 255, 255, 0.9);
+           --text-main: #1f2937;
+           --text-muted: #6b7280;
+       }
+
+
+       * { box-sizing: border-box; margin: 0; padding: 0; }
+       body {
+           font-family: 'Prompt', sans-serif;
+           background: var(--bg-gradient);
+           min-height: 100vh;
+           display: flex;
+           justify-content: center;
+           align-items: center;
+           padding: 20px;
+       }
+
+
+       .profile-container {
+           background: var(--glass-bg);
+           backdrop-filter: blur(10px);
+           padding: 3rem;
+           border-radius: 20px;
+           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+           width: 100%;
+           max-width: 500px;
+           text-align: center;
+           animation: slideUp 0.6s ease-out;
+       }
+
+
+       @keyframes slideUp {
+           from { opacity: 0; transform: translateY(30px); }
+           to { opacity: 1; transform: translateY(0); }
+       }
+
+
+       .avatar {
+           width: 120px;
+           height: 120px;
+           border-radius: 50%;
+           object-fit: cover;
+           border: 4px solid white;
+           box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+           margin-bottom: 1.5rem;
+       }
+
+
+       h2 { color: var(--text-main); margin-bottom: 0.5rem; font-weight: 600; }
+       .username { color: var(--primary); font-weight: 500; margin-bottom: 1.5rem; }
+      
+       .info-card {
+           background: white;
+           padding: 1.5rem;
+           border-radius: 15px;
+           text-align: left;
+           margin-bottom: 2rem;
+           box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+       }
+
+
+       .info-item { margin-bottom: 1rem; }
+       .info-label { font-size: 0.85rem; color: var(--text-muted); display: block; }
+       .info-value { font-size: 1rem; color: var(--text-main); font-weight: 500; }
+
+
+       .btn-group { display: flex; gap: 10px; }
+       .btn {
+           flex: 1;
+           padding: 12px;
+           border-radius: 10px;
+           text-decoration: none;
+           font-weight: 600;
+           font-size: 0.95rem;
+           transition: all 0.2s;
+           text-align: center;
+       }
+
+
+       .btn-primary { background: var(--primary); color: white; }
+       .btn-primary:hover { background: var(--primary-hover); transform: translateY(-2px); }
+      
+       .btn-outline { border: 2px solid #e5e7eb; color: var(--text-muted); }
+       .btn-outline:hover { background: #f9fafb; color: var(--text-main); }
+   </style>
+</head>
+<body>
+
+
+<div class="profile-container">
+   {% if member.avatar %}
+       <img src="{{ member.avatar.url }}" alt="Avatar" class="avatar">
+   {% else %}
+       <img src="https://www.gravatar.com/avatar/?s=120&d=identicon" alt="Avatar" class="avatar">
+   {% endif %}
+   <h2>{{ member.name|default:"ยังไม่ได้ตั้งชื่อ" }}</h2>
+   <p class="username">@{{ member.user }}</p>
+
+
+   <div class="info-card">
+       <div class="info-item">
+           <span class="info-label">อีเมล</span>
+           <span class="info-value">{{ member.email }}</span>
+       </div>
+       <div class="info-item">
+           <span class="info-label">คำอธิบายตัวเอง (Bio)</span>
+           <span class="info-value">{{ member.bio|default:"-" }}</span>
+       </div>
+       <div class="info-item">
+           <span class="info-label">เว็บไซต์</span>
+           <span class="info-value">{{ member.website|default:"-" }}</span>
+       </div>
+   </div>
+
+
+   <div class="btn-group">
+       <a href="{% url 'home' %}" class="btn btn-outline">กลับหน้าหลัก</a>
+       <a href="{% url 'logout' %}" class="btn btn-primary" style="background: #ef4444;">ออกจากระบบ</a>
+   </div>
+</div>
+
+
+</body>
+</html>
+
+
+
+
+
+

@@ -4,28 +4,6 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 
 # Create your models here.
-class Member(models.Model):    
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100, verbose_name='ชื่อ-นามสกุล')
-    homenum = models.CharField(max_length=6, verbose_name='บ้านเลขที่')
-    email = models.EmailField(verbose_name='อีเมล', null=True, blank=True)
-    phone = models.CharField(max_length=10, verbose_name='เบอร์โทร')
-    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name='รูปประจำตัว')
-    bio = models.TextField(null=True, blank=True, verbose_name='ประวัติส่วนตัว')
-    website = models.URLField(null=True, blank=True, verbose_name='เว็บไซต์ส่วนตัว')
-    point = models.IntegerField(default=1, verbose_name='คะแนน')
-
-    def __str__(self):        
-        return 'User: {} | ชื่อ: {} | บ้านเลขที่: {} | โทร: {}'.format(self.user,self.name, self.homenum, self.phone)
-
-@receiver(post_save, sender=User)
-def create_member_profile(sender, instance, created, **kwargs):
-    if created:
-        Member.objects.create(user=instance)
-
-@receiver(post_save, sender=User)
-def save_member_profile(sender, instance, **kwargs):
-    instance.member.save()  
 
 class Incident(models.Model):
     CATEGORY_CHOICES = [
@@ -169,7 +147,6 @@ class IncidentProgress(models.Model):
         return f'{self.incident.code} - {self.get_status_display()}'
 
 
-
 class IncidentProgress(models.Model):
     incident = models.ForeignKey(Incident, on_delete=models.CASCADE, related_name='progresses', verbose_name='รายการแจ้งเหตุ')
     status = models.CharField(max_length=20, choices=Incident.STATUS_CHOICES, verbose_name='สถานะ')
@@ -196,12 +173,26 @@ class Products(models.Model):
     def __str__(self):        
         return 'สินค้า: {} ราคาขาย: {} บาท'.format(self.title, self.price)
 
-class Profile(models.Model):
+class Member(models.Model):    
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    fullname = models.CharField(max_length=100, verbose_name='ชื่อ-นามสกุล')
+    name = models.CharField(max_length=100, verbose_name='ชื่อ-นามสกุล')
+    homenum = models.CharField(max_length=6, verbose_name='บ้านเลขที่')
+    email = models.EmailField(verbose_name='อีเมล', null=True, blank=True)
+    phone = models.CharField(max_length=10, verbose_name='เบอร์โทร')
     avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name='รูปประจำตัว')
     bio = models.TextField(null=True, blank=True, verbose_name='ประวัติส่วนตัว')
-    website = models.URLField(null=True, blank=True, verbose_name='เว็บไซต์ส่วนตัว')    
+    website = models.URLField(null=True, blank=True, verbose_name='เว็บไซต์ส่วนตัว')
+    point = models.IntegerField(default=1, verbose_name='คะแนน')
 
-    def __str__(self):
-        return self.user.username
+    def __str__(self):        
+        return 'User: {} | ชื่อ: {} | บ้านเลขที่: {} | โทร: {}'.format(self.user,self.name, self.homenum, self.phone)
+
+@receiver(post_save, sender=User)
+def create_member_profile(sender, instance, created, **kwargs):
+    if created:
+        Member.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_member_profile(sender, instance, **kwargs):
+    if hasattr(instance, 'member'):
+        instance.member.save()
