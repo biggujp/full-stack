@@ -1,5 +1,31 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+# Create your models here.
+class Member(models.Model):    
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=100, verbose_name='ชื่อ-นามสกุล')
+    homenum = models.CharField(max_length=6, verbose_name='บ้านเลขที่')
+    email = models.EmailField(verbose_name='อีเมล', null=True, blank=True)
+    phone = models.CharField(max_length=10, verbose_name='เบอร์โทร')
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name='รูปประจำตัว')
+    bio = models.TextField(null=True, blank=True, verbose_name='ประวัติส่วนตัว')
+    website = models.URLField(null=True, blank=True, verbose_name='เว็บไซต์ส่วนตัว')
+    point = models.IntegerField(default=1, verbose_name='คะแนน')
+
+    def __str__(self):        
+        return 'User: {} | ชื่อ: {} | บ้านเลขที่: {} | โทร: {}'.format(self.user,self.name, self.homenum, self.phone)
+
+@receiver(post_save, sender=User)
+def create_member_profile(sender, instance, created, **kwargs):
+    if created:
+        Member.objects.create(user=instance)
+
+@receiver(post_save, sender=User)
+def save_member_profile(sender, instance, **kwargs):
+    instance.member.save()  
 
 class Incident(models.Model):
     CATEGORY_CHOICES = [
@@ -159,15 +185,23 @@ class IncidentProgress(models.Model):
     def __str__(self):
         return f'{self.incident.code} - {self.get_status_display()}'
 
-# Create your models here.
-# class Member(models.Model):
-#     name = models.CharField(max_length=100)
-#     homenum = models.CharField(max_length=6)
-#     email = models.EmailField()
-#     phone = models.CharField(max_length=10)
-#     point = models.IntegerField(default=1)
-#     address = models.TextField(null=True, blank=True)
 
-#     def __str__(self):        
-#         return 'ชื่อ: {} | บ้านเลขที่: {} | โทร: {}'.format(self.name, self.homenum, self.phone)
+class Products(models.Model):
+    title = models.CharField(max_length=255, verbose_name='ชื่อสินค้า')
+    detail = models.TextField(null=True, blank=True, verbose_name='รายละเอียด')
+    image = models.ImageField(upload_to='products/', null=True, blank=True, verbose_name='รูปภาพสินค้า')
+    others = models.TextField(null=True, blank=True, verbose_name='ข้อมูลอื่น ๆ')
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='ราคา')   
 
+    def __str__(self):        
+        return 'สินค้า: {} ราคาขาย: {} บาท'.format(self.title, self.price)
+
+class Profile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    fullname = models.CharField(max_length=100, verbose_name='ชื่อ-นามสกุล')
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True, verbose_name='รูปประจำตัว')
+    bio = models.TextField(null=True, blank=True, verbose_name='ประวัติส่วนตัว')
+    website = models.URLField(null=True, blank=True, verbose_name='เว็บไซต์ส่วนตัว')    
+
+    def __str__(self):
+        return self.user.username
