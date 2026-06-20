@@ -20,12 +20,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-xdx6vvh@o+t=vvim6w%m$-9yq83u=bo_c)(5&i@)vedgo^+#75'
+SECRET_KEY = 'django-insecure-uqqk+39u35gwo68%974eleyc#)fcsx9u@j-c@3ph4b==9g=w&c'
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*'] 
+#'*' หมายถึงอนุญาตให้ทุกโฮสต์เข้าถึงแอปพลิเคชันของคุณ ซึ่งเหมาะสำหรับการพัฒนา แต่ไม่ควรใช้ในสภาพแวดล้อมการผลิตเนื่องจากอาจมีความเสี่ยงด้านความปลอดภัย
 
 
 # Application definition
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'myapp', #เพิ่มแอปพลิเคชัน myapp ในรายการ INSTALLED_APPS
 ]
 
 MIDDLEWARE = [
