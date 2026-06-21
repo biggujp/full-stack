@@ -89,30 +89,30 @@
         {% endif %}
 
         <div class="meta">
-            <div class="name">{{ member.name|default:"ยังไม่ได้ตั้งชื่อ" }}</div>
+            <div class="name">{{ member.name|default:"-" }}</div>
             <div class="username">@{{ member.user }}</div>
-            <div style="margin-top:6px;font-size:10px;color:#91e5ff">คะแนน: {{ member.point }}</div>
+            <div style="margin-top:6px;font-size:10px;color:#91e5ff"> Points: {{ member.point }}</div>
         </div>
     </div>
 
     <div class="info-grid">
         <div class="info-card">
-            <span class="info-label">อีเมล</span>
+            <span class="info-label">Email</span>
             <div class="info-value">{{ member.email|default:"-" }}</div>
         </div>
         <div class="info-card">
-            <span class="info-label">เว็บไซต์</span>
+            <span class="info-label">Website</span>
             <div class="info-value">{{ member.website|default:"-" }}</div>
         </div>
         <div class="info-card" style="grid-column:1 / -1">
-            <span class="info-label">คำอธิบายตัวเอง (Bio)</span>
+            <span class="info-label">Bio</span>
             <div class="info-value">{{ member.bio|default:"-" }}</div>
         </div>
     </div>
 
     <div class="btn-group">
-        <a href="{% url 'home' %}" class="btn btn-outline">กลับหน้าหลัก</a>
-        <a href="{% url 'logout' %}" class="btn btn-logout">ออกจากระบบ</a>
+        <a href="{% url 'home' %}" class="btn btn-outline">BACK TO HOME</a>
+        <a href="{% url 'logout' %}" class="btn btn-logout">LOGOUT</a>
     </div>
 
 </div>
