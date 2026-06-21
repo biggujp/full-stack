@@ -29,9 +29,22 @@ from django.contrib import messages
 
 def register(request):
     if request.method == 'POST':
-        form = UserRegisterForm(request.POST)
+        form = UserRegisterForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            user = form.save(commit=False)
+            user.email = form.cleaned_data.get('email')
+            user.save()
+
+            member = user.member
+            member.name = form.cleaned_data.get('name')
+            member.homenum = form.cleaned_data.get('homenum')
+            member.phone = form.cleaned_data.get('phone')
+            member.email = form.cleaned_data.get('email')
+            member.avatar = form.cleaned_data.get('avatar')
+            member.bio = form.cleaned_data.get('bio')
+            member.website = form.cleaned_data.get('website')
+            member.save()
+
             username = form.cleaned_data.get('username')
             messages.success(request, f'ยินดีต้อนรับ {username}! บัญชีผู้ใช้ของคุณถูกสร้างเรียบร้อยแล้ว คุณสามารถเข้าสู่ระบบได้ทันที')
             return redirect('login')  # Redirect to the login page after successful registration

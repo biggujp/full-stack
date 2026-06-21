@@ -101,11 +101,13 @@
 
 
 <div class="profile-container">
-   {% if member.avatar %}
-       <img src="{{ member.avatar.url }}" alt="Avatar" class="avatar">
-   {% else %}
-       <img src="https://www.gravatar.com/avatar/?s=120&d=identicon" alt="Avatar" class="avatar">
-   {% endif %}
+    {% if member.avatar %}
+        <img src="{{ member.avatar.url }}" class="avatar" alt="Avatar">
+    {% else %}
+        <img src="https://www.gravatar.com/avatar/?s=120&d=identicon"
+            class="avatar"
+            alt="Avatar">
+    {% endif %}
    <h2>{{ member.name|default:"ยังไม่ได้ตั้งชื่อ" }}</h2>
    <p class="username">@{{ member.user }}</p>
 
